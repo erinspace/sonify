@@ -6,7 +6,7 @@ import pygame
 from midiutil.MidiFile import MIDIFile
 
 
-def write_to_midifile(data, style=None):
+def write_to_midifile(data, key=None):
     """
     data: list of tuples of x, y coordinates for pitch and timing
     style: type of scale to make sure the notes adhere to (coming soon!)
