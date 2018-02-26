@@ -9,7 +9,44 @@ NOTES = [
     ['G'], ['G#', 'Ab'], ['A'], ['A#', 'Bb'], ['B']
 ]
 
-C_MAJOR = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+KEYS = {
+    'c_major': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
+    'g_major': ['G', 'A', 'B', 'C', 'D', 'E', 'F#']
+}
+
+
+def convert_to_key(data, key):
+    x, y = zip(*data)
+
+    # Finding the index of the note closest to all the notes in the options list
+    notes_in_key = key_name_to_notes(key)
+
+    scaled_y = scale_list_to_range(y, new_min=min(notes_in_key), new_max=max(notes_in_key))
+
+    new_y = []
+    for note in scaled_y:
+        new_y.append(get_closest_midi_value(note, notes_in_key))
+
+    return list(zip(x, new_y))
+
+
+def key_name_to_notes(key, octave_start=2, octave_end=4):
+    key = KEYS.get(key)
+
+    if not key:
+        raise ValueError('No key by that name found')
+
+    notes = []
+    for octave in range(octave_start, octave_end+1):
+        for note in key:
+            notes.append(note_to_midi(note, octave))
+
+    return notes
+
+
+
+def get_closest_midi_value(value, possible_values):
+    return sorted(possible_values, key=lambda i: abs(i - value))[0]
 
 
 def note_to_midi(note_name, octave=3):
@@ -26,14 +63,14 @@ def scale_y_to_midi_range(data, new_min=None, new_max=None):
     midi notes have a range of 0 - 120. Make sure the data is in that range
     data: list of tuples of x, y coordinates for pitch and timing
     min: min data value, defaults to 0
-    max: max data value, defaults to 120
+    max: max data value, defaults to 127
     return: data, but y normalized to the range specified by min and max
     """
     if min < 0 or max > 120:
         raise ValueError('Midi notes must be in a range from 0 - 120')
 
     new_min = min or 0
-    new_max = max or 120
+    new_max = max or 127
 
     x, y = zip(*data)
 
@@ -51,7 +88,7 @@ def scale_list_to_range(list_to_scale, new_min=None, new_max=None):
 
 
 def get_scaled_value(old_value, old_min, old_max, new_min, new_max):
-    return ((old_value - old_min)/(old_max - old_min)) * ((new_max - new_min) + new_min)
+    return ((old_value - old_min)/(old_max - old_min)) * (new_max - new_min) + new_min
 
 
 def write_to_midifile(data, key=None):
@@ -84,9 +121,10 @@ def write_to_midifile(data, key=None):
 
 
 def play_memfile_as_midi(memfile):
+    # https://stackoverflow.com/questions/27279864/generate-midi-file-and-play-it-without-saving-it-to-disk
     pygame.init()
     pygame.mixer.init()
-    memfile.seek(0)  # "rewind" the memFile to play from the beginning
+    memfile.seek(0)
     pygame.mixer.music.load(memfile)
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
@@ -94,6 +132,11 @@ def play_memfile_as_midi(memfile):
     print("Finished!")
 
 
-def play_midi_from_data(input_data, key=None):        
-    memFile = write_to_midifile(input_data, key)
+def play_midi_from_data(input_data, key=None):
+    if key:
+        data = convert_to_key(input_data, key)
+    else:
+        data = input_data
+
+    memFile = write_to_midifile(data, key)
     play_memfile_as_midi(memFile)
