@@ -91,30 +91,39 @@ def get_scaled_value(old_value, old_min, old_max, new_min, new_max):
     return ((old_value - old_min)/(old_max - old_min)) * (new_max - new_min) + new_min
 
 
-def write_to_midifile(data, key=None):
+def write_to_midifile(data, track_type='single'):
     """
     data: list of tuples of x, y coordinates for pitch and timing
-    key: type of scale to make sure the notes adhere to (coming soon!)
+    type: the type of data passed to create tracks. Either 'single' or 'multi'
     """
-    memfile = io.BytesIO()
-    midifile = MIDIFile(1, adjust_origin=False)
+    if track_type not in ['single', 'multiple']:
+        raise ValueError('Track type must be single or multiple')
     
+    if track_type == 'single':
+        data = [data]
+
+    memfile = io.BytesIO()
+    midifile = MIDIFile(numTracks=len(data), adjust_origin=False)
+
     track = 0
     time = 0
     channel = 0
     base_pitch = 60
     duration = 1
     volume = 100
-    
-    # A bit more setup
-    midifile.addTrackName(track, time, "Awesome Data Track")
-    midifile.addTempo(track, time, 120)
 
-    # Write the notes we want to appear in the file
-    for point in data:
-        time = point[0]
-        pitch = base_pitch + int(point[1])
-        midifile.addNote(track, channel, pitch, time, duration, volume)
+    for data_list in data:
+        midifile.addTrackName(track, time, 'Track {}'.format(track))
+        midifile.addTempo(track, time, 120)
+
+        # Write the notes we want to appear in the file
+        for point in data_list:
+            time = point[0]
+            pitch = base_pitch + int(point[1])
+            midifile.addNote(track, channel, pitch, time, duration, volume)
+
+        track += 1
+
     midifile.writeFile(memfile)
     
     return memfile
@@ -132,11 +141,25 @@ def play_memfile_as_midi(memfile):
     print("Finished!")
 
 
-def play_midi_from_data(input_data, key=None):
+def play_midi_from_data(input_data, key=None, track_type='single'):
+    """
+    data: a list of tuples, or a list of lists of tuples to add as seperate tracks
+    eg: 
+    data = [(1, 5), (5, 7)] OR
+    data = [
+        [(1, 5), (5, 7)],
+        [(4, 7), (2, 10)]
+    ]
+    """
     if key:
-        data = convert_to_key(input_data, key)
+        if track_type == 'multiple':
+            converted_total_data = []
+            for data_list in input_data:
+                converted_total_data.append(convert_to_key(data_list, key))
+        else:
+            data = convert_to_key(input_data, key)
     else:
         data = input_data
 
-    memFile = write_to_midifile(data, key)
+    memFile = write_to_midifile(data, track_type)
     play_memfile_as_midi(memFile)
