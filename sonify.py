@@ -11,7 +11,8 @@ NOTES = [
 
 KEYS = {
     'c_major': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
-    'g_major': ['G', 'A', 'B', 'C', 'D', 'E', 'F#']
+    'g_major': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
+    'eb_major': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D']
 }
 
 
@@ -81,6 +82,7 @@ def scale_y_to_midi_range(data, new_min=None, new_max=None):
 
     return list(zip(x, new_y))
 
+
 def scale_list_to_range(list_to_scale, new_min=None, new_max=None):
     old_min = min(list_to_scale)
     old_max = max(list_to_scale)
@@ -94,7 +96,7 @@ def get_scaled_value(old_value, old_min, old_max, new_min, new_max):
 def write_to_midifile(data, track_type='single'):
     """
     data: list of tuples of x, y coordinates for pitch and timing
-    type: the type of data passed to create tracks. Either 'single' or 'multi'
+    type: the type of data passed to create tracks. Either 'single' or 'multiple'
     """
     if track_type not in ['single', 'multiple']:
         raise ValueError('Track type must be single or multiple')
@@ -107,8 +109,8 @@ def write_to_midifile(data, track_type='single'):
 
     track = 0
     time = 0
+    program = 0
     channel = 0
-    base_pitch = 60
     duration = 1
     volume = 100
 
@@ -119,10 +121,13 @@ def write_to_midifile(data, track_type='single'):
         # Write the notes we want to appear in the file
         for point in data_list:
             time = point[0]
-            pitch = base_pitch + int(point[1])
+            pitch = int(point[1])
             midifile.addNote(track, channel, pitch, time, duration, volume)
+            midifile.addProgramChange(track, channel, time, program)
 
         track += 1
+        channel += 1
+        program += 15
 
     midifile.writeFile(memfile)
     
@@ -138,7 +143,7 @@ def play_memfile_as_midi(memfile):
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         sleep(1)
-    print("Finished!")
+    print('Done playing!')
 
 
 def play_midi_from_data(input_data, key=None, track_type='single'):
@@ -153,9 +158,9 @@ def play_midi_from_data(input_data, key=None, track_type='single'):
     """
     if key:
         if track_type == 'multiple':
-            converted_total_data = []
+            data = []
             for data_list in input_data:
-                converted_total_data.append(convert_to_key(data_list, key))
+                data.append(convert_to_key(data_list, key))
         else:
             data = convert_to_key(input_data, key)
     else:
