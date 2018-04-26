@@ -45,7 +45,6 @@ def key_name_to_notes(key, octave_start=2, octave_end=4):
     return notes
 
 
-
 def get_closest_midi_value(value, possible_values):
     return sorted(possible_values, key=lambda i: abs(i - value))[0]
 
@@ -59,7 +58,8 @@ def note_to_midi(note_name, octave=3):
 
     return midi_base + octave*12
 
-def scale_y_to_midi_range(data, new_min=None, new_max=None):
+
+def scale_y_to_midi_range(data, new_min=0, new_max=127):
     """
     midi notes have a range of 0 - 120. Make sure the data is in that range
     data: list of tuples of x, y coordinates for pitch and timing
@@ -67,17 +67,10 @@ def scale_y_to_midi_range(data, new_min=None, new_max=None):
     max: max data value, defaults to 127
     return: data, but y normalized to the range specified by min and max
     """
-    if min < 0 or max > 120:
+    if new_min < 0 or new_max > 120:
         raise ValueError('Midi notes must be in a range from 0 - 120')
 
-    new_min = min or 0
-    new_max = max or 127
-
     x, y = zip(*data)
-
-    old_min = min(y)
-    old_max = max(y)
-
     new_y = scale_list_to_range(y, new_min, new_max)
 
     return list(zip(x, new_y))
