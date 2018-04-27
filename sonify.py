@@ -86,6 +86,14 @@ def get_scaled_value(old_value, old_min, old_max, new_min, new_max):
     return ((old_value - old_min)/(old_max - old_min)) * (new_max - new_min) + new_min
 
 
+def quantize_x_value(list_to_quantize, steps=0.5):
+    # Restrict the x range to something that's a  multiple of the number of steps given!
+    quantized_x = []
+    for x in list_to_quantize:
+        quantized_x.append(round(steps * round(float(x) / steps), 2))
+    return quantized_x
+
+
 def write_to_midifile(data, track_type='single'):
     """
     data: list of tuples of x, y coordinates for pitch and timing
