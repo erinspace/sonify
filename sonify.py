@@ -5,16 +5,7 @@ import pygame
 from pretty_midi import note_name_to_number
 from midiutil.MidiFile import MIDIFile
 
-NOTES = [
-    ['C'], ['C#', 'Db'], ['D'], ['D#', 'Eb'], ['E'], ['F'], ['F#', 'Gb'],
-    ['G'], ['G#', 'Ab'], ['A'], ['A#', 'Bb'], ['B']
-]
-
-KEYS = {
-    'c_major': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
-    'g_major': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
-    'eb_major': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D']
-}
+from constants import KEYS, INSTRUMENTS, PERCUSSION
 
 
 def make_first_number_match_key(y_values, notes_in_key):
@@ -28,19 +19,32 @@ def make_first_number_match_key(y_values, notes_in_key):
 
 
 def convert_to_key(data, key, number_of_octaves=2):
+    instrument, instrument_type = None, None
+    if type(data[0]) != tuple:
+        instrument = data.pop(0)
+        _, instrument_type = get_instrument(instrument)
+
     x, y = zip(*data)
 
-    # Finding the index of the note closest to all the notes in the options list
-    notes_in_key = key_name_to_notes(key, number_of_octaves=number_of_octaves)
+    if instrument_type == 'percussion':
+        new_y = y
+    else:
+        # Finding the index of the note closest to all the notes in the options list
+        notes_in_key = key_name_to_notes(key, number_of_octaves=number_of_octaves)
 
-    transposed_y = make_first_number_match_key(y, notes_in_key)
-    scaled_y = scale_list_to_range(transposed_y, new_min=min(notes_in_key), new_max=max(notes_in_key))
+        transposed_y = make_first_number_match_key(y, notes_in_key)
+        scaled_y = scale_list_to_range(transposed_y, new_min=min(notes_in_key), new_max=max(notes_in_key))
 
-    new_y = []
-    for note in scaled_y:
-        new_y.append(get_closest_midi_value(note, notes_in_key))
+        new_y = []
+        for note in scaled_y:
+            new_y.append(get_closest_midi_value(note, notes_in_key))
 
-    return list(zip(x, new_y))
+    processed_data = list(zip(x, new_y))
+
+    if instrument:
+        processed_data = [instrument] + processed_data
+
+    return processed_data
 
 
 def key_name_to_notes(key, octave_start=1, number_of_octaves=2):
@@ -109,9 +113,21 @@ def quantize_x_value(list_to_quantize, steps=0.5):
     return quantized_x
 
 
+def get_instrument(instrument_name):
+    instrument_type = 'melodic'
+    program_number = INSTRUMENTS.get(instrument_name.lower())
+    if not program_number:
+        program_number = PERCUSSION.get(instrument_name.lower())
+        instrument_type = 'percussion'
+        if not program_number:
+            raise AttributeError('No instrument or percussion could be found by that name')
+    return program_number - 1, instrument_type
+
+
 def write_to_midifile(data, track_type='single'):
     """
     data: list of tuples of x, y coordinates for pitch and timing
+          Optional: add a string to the start of the data list to specify instrument!
     type: the type of data passed to create tracks. Either 'single' or 'multiple'
     """
     if track_type not in ['single', 'multiple']:
@@ -128,22 +144,29 @@ def write_to_midifile(data, track_type='single'):
     program = 0
     channel = 0
     duration = 1
-    volume = 100
+    volume = 90
 
     for data_list in data:
         midifile.addTrackName(track, time, 'Track {}'.format(track))
         midifile.addTempo(track, time, 120)
 
+        instrument_type = 'melodic'
+        if type(data_list[0]) != tuple:
+            program, instrument_type = get_instrument(data_list.pop(0))
+
+        if instrument_type == 'percussion':
+            volume = 100
+            channel = 9
+
         # Write the notes we want to appear in the file
         for point in data_list:
             time = point[0]
-            pitch = int(point[1])
+            pitch = int(point[1]) if instrument_type == 'melodic' else program
             midifile.addNote(track, channel, pitch, time, duration, volume)
             midifile.addProgramChange(track, channel, time, program)
 
         track += 1
-        channel += 1
-        program += 15
+        channel = 0
 
     midifile.writeFile(memfile)
     
@@ -164,13 +187,16 @@ def play_memfile_as_midi(memfile):
 
 def play_midi_from_data(input_data, key=None, track_type='single'):
     """
-    data: a list of tuples, or a list of lists of tuples to add as seperate tracks
+    data: a list of tuples, or a list of lists of tuples to add as separate tracks
     eg: 
     data = [(1, 5), (5, 7)] OR
     data = [
         [(1, 5), (5, 7)],
         [(4, 7), (2, 10)]
     ]
+
+    optional -- append an instrument name to the start of each data list
+                to play back using that program number!
     """
     if key:
         if track_type == 'multiple':
