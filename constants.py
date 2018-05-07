@@ -4,11 +4,32 @@ NOTES = [
     ['G'], ['G#', 'Ab'], ['A'], ['A#', 'Bb'], ['B']
 ]
 
-KEYS = {
-    'c_major': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
-    'g_major': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
-    'eb_major': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D']
-}
+def get_keys():
+    base_keys = {
+        'c_major': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
+        'd_major': ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'],
+        'e_major': ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'],
+        'f_major': ['F', 'G', 'A', 'Bb', 'C', 'D', 'E', 'F'],
+        'g_major': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
+        'a_major': ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#', 'A'],
+        'b_major': ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#', 'B'],
+        'c_sharp_major': ['Db', 'Eb', 'F', 'Gb', 'Ab', 'Bb', 'C', 'Db'],
+        'd_sharp_major': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D'],
+        'f_sharp_major': ['F#', 'G#', 'A#', 'B', 'C#', 'D#', 'F', 'F#'],
+        'g_sharp_major': ['Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'G', 'Ab'],
+        'a_sharp_major': ['Bb', 'C', 'D', 'Eb', 'F', 'G', 'A', 'Bb']
+    }
+
+    base_keys['d_flat_major'] = base_keys['c_sharp_major']
+    base_keys['e_flat_major'] = base_keys['d_sharp_major']
+    base_keys['g_flat_major'] = base_keys['f_sharp_major']
+    base_keys['a_flat_major'] = base_keys['g_sharp_major']
+    base_keys['b_flat_major'] = base_keys['a_sharp_major']
+
+    return base_keys
+
+
+KEYS = get_keys()
 
 # Instrument and Percussion map from
 # https://www.midi.org/specifications/item/gm-level-1-sound-set
