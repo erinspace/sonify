@@ -18,7 +18,7 @@ def make_first_number_match_key(y_values, notes_in_key):
     return new_y
 
 
-def convert_to_key(data, key, number_of_octaves=2):
+def convert_to_key(data, key, number_of_octaves=4):
     instrument, instrument_type = None, None
     if type(data[0]) != tuple:
         instrument = data.pop(0)
@@ -47,7 +47,7 @@ def convert_to_key(data, key, number_of_octaves=2):
     return processed_data
 
 
-def key_name_to_notes(key, octave_start=1, number_of_octaves=2):
+def key_name_to_notes(key, octave_start=1, number_of_octaves=4):
     """ Convert a key name to notes, using C3=60
 
     :param key: String matching one of the values in pre-defined KEY dict
@@ -185,15 +185,18 @@ def play_memfile_as_midi(memfile):
     print('Done playing!')
 
 
-def play_midi_from_data(input_data, key=None, track_type='single'):
+def play_midi_from_data(input_data, key=None, number_of_octaves=4, track_type='single'):
     """
-    data: a list of tuples, or a list of lists of tuples to add as separate tracks
+    input_data: a list of tuples, or a list of lists of tuples to add as separate tracks
     eg: 
-    data = [(1, 5), (5, 7)] OR
-    data = [
+    input_data = [(1, 5), (5, 7)] OR
+    input_data = [
         [(1, 5), (5, 7)],
         [(4, 7), (2, 10)]
     ]
+    key: key to play back the graph -- see constants.py for current choices
+    number_of_octaves: number of octaves used to restrict the music playback
+     when converting to a key
 
     optional -- append an instrument name to the start of each data list
                 to play back using that program number!
@@ -202,9 +205,9 @@ def play_midi_from_data(input_data, key=None, track_type='single'):
         if track_type == 'multiple':
             data = []
             for data_list in input_data:
-                data.append(convert_to_key(data_list, key))
+                data.append(convert_to_key(data_list, key, number_of_octaves))
         else:
-            data = convert_to_key(input_data, key)
+            data = convert_to_key(input_data, key, number_of_octaves)
     else:
         data = input_data
 
