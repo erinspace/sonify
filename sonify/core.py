@@ -5,7 +5,7 @@ import pygame
 from pretty_midi import note_name_to_number
 from midiutil.MidiFile import MIDIFile
 
-from constants import KEYS, INSTRUMENTS, PERCUSSION
+from .constants import KEYS, INSTRUMENTS, PERCUSSION
 
 
 def make_first_number_match_key(y_values, notes_in_key):
@@ -132,7 +132,7 @@ def write_to_midifile(data, track_type='single'):
     """
     if track_type not in ['single', 'multiple']:
         raise ValueError('Track type must be single or multiple')
-    
+
     if track_type == 'single':
         data = [data]
 
@@ -169,7 +169,7 @@ def write_to_midifile(data, track_type='single'):
         channel = 0
 
     midifile.writeFile(memfile)
-    
+
     return memfile
 
 
@@ -188,7 +188,7 @@ def play_memfile_as_midi(memfile):
 def play_midi_from_data(input_data, key=None, number_of_octaves=4, track_type='single'):
     """
     input_data: a list of tuples, or a list of lists of tuples to add as separate tracks
-    eg: 
+    eg:
     input_data = [(1, 5), (5, 7)] OR
     input_data = [
         [(1, 5), (5, 7)],
