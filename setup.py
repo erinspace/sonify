@@ -7,7 +7,7 @@ here = path.abspath(path.dirname(__file__))
 
 VERSION = None
 REQUIREMENTS = [
-    'pygame',
+    'pygame==1.9.3',
     'pretty_midi',
     'midiutil'
 ]
