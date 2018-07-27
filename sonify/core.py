@@ -80,7 +80,7 @@ def get_closest_midi_value(value, possible_values):
 
 def scale_y_to_midi_range(data, new_min=0, new_max=127):
     """
-    midi notes have a range of 0 - 120. Make sure the data is in that range
+    midi notes have a range of 0 - 127. Make sure the data is in that range
     data: list of tuples of x, y coordinates for pitch and timing
     min: min data value, defaults to 0
     max: max data value, defaults to 127
