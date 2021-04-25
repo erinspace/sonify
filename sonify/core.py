@@ -1,6 +1,7 @@
 import io
 from time import sleep
-
+import re
+import os
 import pygame
 from pretty_midi import note_name_to_number
 from midiutil.MidiFile import MIDIFile
@@ -122,6 +123,89 @@ def get_instrument(instrument_name):
         if not program_number:
             raise AttributeError('No instrument or percussion could be found by that name')
     return program_number - 1, instrument_type
+
+def auto_save_file(path):
+  directory, file_name=os.path.split(path)
+  while os.path.isfile(path):
+    pattern="(\d+)\)\."
+    if re.search(pattern, file_name) is None:
+      file_name=file_name.replace(".", "(0).")
+    else:
+      current_number=int(re.findall(pattern, file_name)[-1])
+      new_number=current_number + 1
+      file_name=file_name.replace(f"({current_number}).", f"({new_number}).")
+    if(directory==''):
+        path=file_name
+    else:
+        path=os.path.join(directory + os.sep + file_name)
+  return path   
+
+def save_to_midifile(input_data, track_type='single', key=None,number_of_octaves=4,output_path='',name='mymidifile'):
+    """
+    Save your midifile with this function instead of playing it!
+
+    data: (same list like play_to_midifile) list of tuples of x, y coordinates for pitch and timing
+          Optional: add a string to the start of the data list to specify instrument!
+    type: the type of data passed to create tracks. Either 'single' or 'multiple'
+    key: key to play back the graph -- see constants.py for current choices
+    number_of_octaves: number of octaves used to restrict the music playback
+                       when converting to a key
+    output_path: folder path where you want to save your midi files. Path like 'sounds/example/'. Always include the last '/'. 
+                 If you dont specify the path, files will be saved in the actual directory.
+    name = Include a name for your midi file, if name is not included, name will be "mymidifile"
+           If you use a loop and you don't include a name, output will be like: mymidifile.midi ,mymidifile(0).midi, mymidifile(1).midi ... (n files)   
+    """
+    
+    if key:
+        if track_type == 'multiple':
+            data = []
+            for data_list in input_data:
+                data.append(convert_to_key(data_list, key, number_of_octaves))
+        else:
+            data = convert_to_key(input_data, key, number_of_octaves)
+    else:
+        data = input_data
+    
+    
+    if track_type not in ['single', 'multiple']:
+        raise ValueError('Track type must be single or multiple')
+
+    if track_type == 'single':
+        data = [data]
+
+    midifile = MIDIFile(numTracks=len(data), adjust_origin=False)
+
+    track = 0
+    time = 0
+    program = 0
+    channel = 0
+    duration = 1
+    volume = 90
+
+    for data_list in data:
+        midifile.addTrackName(track, time, 'Track {}'.format(track))
+        midifile.addTempo(track, time, 120)
+
+        instrument_type = 'melodic'
+        if type(data_list[0]) != tuple:
+            program, instrument_type = get_instrument(data_list.pop(0))
+
+        if instrument_type == 'percussion':
+            volume = 100
+            channel = 9
+
+        # Write the notes we want to appear in the file
+        for point in data_list:
+            time = point[0]
+            pitch = int(point[1]) if instrument_type == 'melodic' else program
+            midifile.addNote(track, channel, pitch, time, duration, volume)
+            midifile.addProgramChange(track, channel, time, program)
+
+        track += 1
+        channel = 0
+
+        with open(auto_save_file(output_path+name+'.midi'), 'wb') as output_file:
+            midifile.writeFile(output_file)
 
 
 def write_to_midifile(data, track_type='single'):
